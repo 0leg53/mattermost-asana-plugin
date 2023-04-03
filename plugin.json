@@ -1,0 +1,40 @@
+{
+    "id": "earth.reputation.asana",
+    "name": "Asana",
+    "description": "Asana plugin for Mattermost",
+    "homepage_url": "https://github.com/0leg53/mattermost-asana-plugin",
+    "support_url": "https://github.com/0leg53/mattermost-asana-plugin/issues",
+    "release_notes_url": "https://github.com/0leg53/mattermost-asana-plugin/releases/tag/v0.1.0",
+    "icon_path": "assets/logo.svg",
+    "version": "0.1.0",
+    "min_server_version": "6.2.1",
+    "server": {
+        "executables": {
+            "linux-amd64": "server/dist/plugin-linux-amd64",
+            "linux-arm64": "server/dist/plugin-linux-arm64",
+            "darwin-amd64": "server/dist/plugin-darwin-amd64",
+            "darwin-arm64": "server/dist/plugin-darwin-arm64",
+            "windows-amd64": "server/dist/plugin-windows-amd64.exe"
+        }
+    },
+    "webapp": {
+        "bundle_path": "webapp/dist/main.js"
+    },
+    "settings_schema": {
+        "header": "Hey! Here is a header text. Want any changes? Text to developer.",
+        "settings": [
+            {
+                "key": "AsanaClientId",
+                "display_name": "Asana OAuth Client ID:",
+                "type": "text",
+                "help_text": "The client ID for the OAuth app registered with Asana."
+            },
+            {
+                "key": "AsanaClientSecret",
+                "display_name": "Asana OAuth Client Secret:",
+                "type": "text",
+                "help_text": "The client secret for the OAuth app registered with Asana."
+            }
+        ]
+    }
+}
