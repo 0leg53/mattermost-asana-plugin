@@ -37,7 +37,7 @@ func (p *Plugin) OnActivate() error {
 	botID, err := p.Helpers.EnsureBot(&model.Bot{
 		Username:    "asana.bot",
 		DisplayName: "Asana",
-		Description: "Created by the Asana plugin.",
+		Description: "makes you work",
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to ensure asaana bot")

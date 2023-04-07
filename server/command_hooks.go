@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/mattermost/mattermost-plugin-api/experimental/command"
 	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/pkg/errors"
 )
 
@@ -26,7 +30,7 @@ func (p *Plugin) getCommand() (*model.Command, error) {
 }
 
 func getAutocompleteData() *model.AutocompleteData {
-	cal := model.NewAutocompleteData("calendar", "[command]", "Available commands: connect, list, summary, create, help")
+	cal := model.NewAutocompleteData("asana", "[command]", "Available commands: connect")
 
 	connect := model.NewAutocompleteData("connect", "", "Connect your Asana with your Mattermost account")
 	cal.AddCommand(connect)
@@ -48,4 +52,56 @@ func getAutocompleteData() *model.AutocompleteData {
 	// help := model.NewAutocompleteData("help", "", "Display usage")
 	// cal.AddCommand(help)
 	return cal
+}
+
+func (p *Plugin) postCommandResponse(args *model.CommandArgs, text string) {
+	post := &model.Post{
+		UserId:    p.botID,
+		ChannelId: args.ChannelId,
+		Message:   text,
+	}
+	_ = p.API.SendEphemeralPost(args.UserId, post)
+}
+
+// ExecuteCommand inside plugin
+func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+	split := strings.Fields(args.Command)
+	command := split[0]
+	action := ""
+	config := p.API.GetConfig()
+
+	if len(split) > 1 {
+		action = split[1]
+	}
+
+	if command != "/asana" {
+		return &model.CommandResponse{}, nil
+	}
+
+	if action == "connect" {
+		if config.ServiceSettings.SiteURL == nil {
+			p.postCommandResponse(args, "Invalid SiteURL")
+			return &model.CommandResponse{}, nil
+		} else {
+			p.postCommandResponse(args, fmt.Sprintf("[Click here to link your Asana Account.](%s/plugins/%s/oauth/connect)", *config.ServiceSettings.SiteURL, manifest.ID))
+			return &model.CommandResponse{}, nil
+		}
+	}
+	messageToPost := ""
+	// switch action {
+	// case "list":
+	// 	messageToPost = p.executeCommandList(args)
+	// case "summary":
+	// 	messageToPost = p.executeCommandSummary(args)
+	// case "create":
+	// 	messageToPost = p.executeCommandCreate(args)
+	// case "help":
+	// 	messageToPost = p.executeCommandHelp(args)
+	// }
+
+	if messageToPost != "" {
+		p.postCommandResponse(args, messageToPost)
+	}
+
+	return &model.CommandResponse{}, nil
 }
