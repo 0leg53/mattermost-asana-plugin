@@ -147,7 +147,7 @@ func (p *Plugin) completeAsana(w http.ResponseWriter, r *http.Request) {
 	// // Post intro post
 	// resJson, _ := json.Marshal(workspaces)
 
-	message := "#### Welcome to the Mattermost Asana Plugin!\n" +
+	message := "#### Welcome to Asana Plugin!\n" +
 		"You've connected your account to your Asana.\n" +
 		"Type **/asana help** to get bot usage help \n" +
 		"Your `workspace` is `" + workspaces[0].Name + "`\n"

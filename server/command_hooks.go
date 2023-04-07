@@ -30,7 +30,7 @@ func (p *Plugin) getCommand() (*model.Command, error) {
 }
 
 func getAutocompleteData() *model.AutocompleteData {
-	cal := model.NewAutocompleteData("asana", "[command]", "Available commands: connect")
+	cal := model.NewAutocompleteData("asana", "[command]", "Available commands: connect, help")
 
 	connect := model.NewAutocompleteData("connect", "", "Connect your Asana with your Mattermost account")
 	cal.AddCommand(connect)
@@ -49,8 +49,9 @@ func getAutocompleteData() *model.AutocompleteData {
 	// create.AddTextArgument("Time the event finishes in YYYY-MM-DD@HH:MM format", "[end_datetime]", "")
 	// cal.AddCommand(create)
 
-	// help := model.NewAutocompleteData("help", "", "Display usage")
-	// cal.AddCommand(help)
+	help := model.NewAutocompleteData("help", "", "Display usage")
+	cal.AddCommand(help)
+
 	return cal
 }
 
@@ -88,20 +89,27 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		}
 	}
 	messageToPost := ""
-	// switch action {
+	switch action {
 	// case "list":
 	// 	messageToPost = p.executeCommandList(args)
 	// case "summary":
 	// 	messageToPost = p.executeCommandSummary(args)
 	// case "create":
 	// 	messageToPost = p.executeCommandCreate(args)
-	// case "help":
-	// 	messageToPost = p.executeCommandHelp(args)
-	// }
+	case "help":
+		messageToPost = p.executeCommandHelp(args)
+	}
 
 	if messageToPost != "" {
 		p.postCommandResponse(args, messageToPost)
 	}
 
 	return &model.CommandResponse{}, nil
+}
+
+func (p *Plugin) executeCommandHelp(args *model.CommandArgs) string {
+	commandHelp := "- `/asana connect` — Connect your Asana with your account \n" +
+		"- `/asana help` — Get this message \n" +
+		"\n"
+	return "###### Mattermost Asana Plugin - Slash Command Help\n" + commandHelp
 }
