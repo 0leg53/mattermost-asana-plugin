@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"bitbucket.org/mikehouston/asana-go"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"golang.org/x/oauth2"
@@ -71,7 +72,7 @@ func (p *Plugin) completeAsana(w http.ResponseWriter, r *http.Request) {
 			</script>
 		</head>
 		<body>
-			<p>Completed connecting to Google Calendar. Please close this window.</p>
+			<p>Completed connecting to Asana. Please close this window.</p>
 		</body>
 	</html>
 	`
@@ -109,15 +110,27 @@ func (p *Plugin) completeAsana(w http.ResponseWriter, r *http.Request) {
 
 	tokenJSON, err := json.Marshal(token)
 	if err != nil {
-		http.Error(w, "Invalid token marshal in completeCalendar", http.StatusBadRequest)
+		http.Error(w, "Invalid token marshal in completeAsana", http.StatusBadRequest)
+		return
+	}
+	p.API.KVSet(userId+"asanaToken", tokenJSON)
+
+	client := p.getAsanaClient(userId)
+
+	workspaces, _, err := client.Workspaces(&asana.Options{Limit: 100})
+
+	if err != nil || len(workspaces) == 0 {
+		p.API.LogWarn("failed sync fresh calender", "error", err.Error())
+		http.Error(w, "failed sync fresh calender", http.StatusInternalServerError)
+
+		p.CreateBotMessage(userId, "Error while getting user workspaces")
 		return
 	}
 
-	p.API.KVSet(userId+"calendarToken", tokenJSON)
-
+	p.API.KVSet(userId+"asanaWorkspace", []byte(workspaces[0].ID))
 	// TODO:
 
-	// err = p.CalendarSync(userId)
+	// err = p.AsanaSync(userId)
 	// if err != nil {
 	// 	p.API.LogWarn("failed sync fresh calender", "error", err.Error())
 	// 	http.Error(w, "failed sync fresh calender", http.StatusInternalServerError)
@@ -132,11 +145,23 @@ func (p *Plugin) completeAsana(w http.ResponseWriter, r *http.Request) {
 	// p.startCronJob(autheduserId)
 
 	// // Post intro post
-	// message := "#### Welcome to the Mattermost Asana Plugin!\n" +
-	// 	"You've successfully connected your Mattermost account to your Asana.\n" +
-	// 	"Please type **/asana help** to understand how to use this plugin. "
+	// resJson, _ := json.Marshal(workspaces)
 
-	// p.CreateBotDMPost(userId, message)
+	message := "#### Welcome to the Mattermost Asana Plugin!\n" +
+		"You've connected your account to your Asana.\n" +
+		"Type **/asana help** to get bot usage help \n" +
+		"Your `workspace` is `" + workspaces[0].Name + "`\n"
+
+	if len(workspaces) > 1 {
+		message += "Available workspases:\n"
+		for i := 0; i < len(workspaces); i++ {
+			message += "1. " + workspaces[i].Name + "\n"
+		}
+		message += "Workspace changing not implemented yet."
+		// message += "If you want to change actual workspace, use `/asana workspace %ordinal number%` command` \n"
+	}
+
+	p.CreateBotMessage(userId, message)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprint(w, html)
 }
@@ -155,7 +180,7 @@ func (p *Plugin) completeAsana(w http.ResponseWriter, r *http.Request) {
 // 	userId := r.Header.Get("Mattermost-User-ID")
 // 	eventID := r.URL.Query().Get("evtid")
 // 	calendarID := p.getPrimaryCalendarID(userId)
-// 	srv, err := p.getCalendarService(userId)
+// 	srv, err := p.getAsanaClient(userId)
 // 	if err != nil {
 // 		p.CreateBotDMPost(userId, fmt.Sprintf("Unable to delete event. Error: %s", err))
 // 		return
@@ -191,7 +216,7 @@ func (p *Plugin) handleEventResponse(w http.ResponseWriter, r *http.Request) {
 	// response := r.URL.Query().Get("response")
 	// eventID := r.URL.Query().Get("evtid")
 	// calendarID := p.getPrimaryCalendarID(userId)
-	// srv, _ := p.getCalendarService(userId)
+	// srv, _ := p.getAsanaClient(userId)
 
 	// eventToBeUpdated, err := srv.Events.Get(calendarID, eventID).Do()
 	// if err != nil {
@@ -227,9 +252,9 @@ func (p *Plugin) handleEventResponse(w http.ResponseWriter, r *http.Request) {
 // 	var channel calendar.Channel
 // 	json.Unmarshal(channelByte, &channel)
 // 	if string(watchToken) == channelID && state == "exists" {
-// 		p.CalendarSync(userId)
+// 		p.AsanaSync(userId)
 // 	} else {
-// 		srv, _ := p.getCalendarService(userId)
+// 		srv, _ := p.getAsanaClient(userId)
 // 		srv.Channels.Stop(&calendar.Channel{
 // 			Id:         channelID,
 // 			ResourceId: resourceID,

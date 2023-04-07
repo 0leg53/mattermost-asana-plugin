@@ -1,5 +1,5 @@
 {
-    "id": "earth.reputation.asana",
+    "id": "com.reputationearth.asana",
     "name": "Asana",
     "description": "Asana plugin for Mattermost",
     "homepage_url": "https://github.com/0leg53/mattermost-asana-plugin",

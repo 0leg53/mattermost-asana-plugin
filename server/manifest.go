@@ -6,6 +6,6 @@ var manifest = struct {
 	ID      string
 	Version string
 }{
-	ID:      "earth.reputation.asana",
+	ID:      "com.reputationearth.asana",
 	Version: "0.1.0",
 }
