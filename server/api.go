@@ -115,15 +115,16 @@ func (p *Plugin) completeAsana(w http.ResponseWriter, r *http.Request) {
 	}
 	p.API.KVSet(userId+"asanaToken", tokenJSON)
 
-	client := p.getAsanaClient(userId)
+	client, accessToken := p.getAsanaClient(userId)
 
 	workspaces, _, err := client.Workspaces(&asana.Options{Limit: 100})
 
 	if err != nil || len(workspaces) == 0 {
-		p.API.LogWarn("failed sync fresh calender", "error", err.Error())
-		http.Error(w, "failed sync fresh calender", http.StatusInternalServerError)
+		errorMessage := "Error while getting user workspaces"
+		p.API.LogWarn(errorMessage, "error", err.Error())
+		http.Error(w, errorMessage, http.StatusInternalServerError)
 
-		p.CreateBotMessage(userId, "Error while getting user workspaces")
+		p.CreateBotMessage(userId, errorMessage)
 		return
 	}
 
@@ -159,6 +160,19 @@ func (p *Plugin) completeAsana(w http.ResponseWriter, r *http.Request) {
 		}
 		message += "Workspace changing not implemented yet."
 		// message += "If you want to change actual workspace, use `/asana workspace %ordinal number%` command` \n"
+	}
+	workspace := workspaces[0]
+	workspace.Projects(client)
+
+	workspaceJSON, err := json.Marshal(workspace)
+
+	message += "\n `" + string(workspaceJSON) + "` \n"
+
+	Projects, _, _ := workspace.Projects(client)
+
+	for _, project := range Projects {
+		eventsResponse, _ := GetEventsResponse(accessToken, project.ID, "")
+		p.API.KVSet(project.ID+"projectSyncToken", []byte(eventsResponse.Sync))
 	}
 
 	p.CreateBotMessage(userId, message)

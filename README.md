@@ -142,3 +142,17 @@ if appErr := p.API.SetProfileImage(userID, profileImage); appErr != nil {
 
 ### How do I build the plugin with unminified JavaScript?
 Setting the `MM_DEBUG` environment variable will invoke the debug builds. The simplist way to do this is to simply include this variable in your calls to `make` (e.g. `make dist MM_DEBUG=1`).
+
+
+
+### TODO
+
+onComplete:
+— собираем все проекты [*]
+— по каждому проекту делаем запросы events и записываем sync-токен как (%projectId%+projectSyncToken : %sync-token%). тут ещё мы получаем 412 и errors.message [*]
+- ставим cron-job (5 минут) на сбор всех проектов и сбор events по каждому с записанным sync-токеном. 
+
+в джобе:
+- записываем новый sync токен. 
+— для каждого полученного объекта event собираем данные по userId, projectId и т.д. и отправляем сообщение юзеру по (mattermost)userId,
+— если получаем ошибку "sync старый", сразу переспрашиваем events 

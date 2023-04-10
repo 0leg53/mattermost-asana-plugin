@@ -35,12 +35,12 @@ func (p *Plugin) AsanaConfig() *oauth2.Config {
 }
 
 // getAsanaClient retrieve token stored in database and then generates a google calendar service
-func (p *Plugin) getAsanaClient(userID string) *asana.Client {
+func (p *Plugin) getAsanaClient(userID string) (*asana.Client, string) {
 	var token oauth2.Token
 
 	tokenInByte, appErr := p.API.KVGet(userID + "asanaToken")
 	if appErr != nil {
-		return nil
+		return nil, ""
 	}
 
 	json.Unmarshal(tokenInByte, &token)
@@ -51,14 +51,14 @@ func (p *Plugin) getAsanaClient(userID string) *asana.Client {
 
 	client := asana.NewClientWithAccessToken(newToken.AccessToken)
 
-	return client
+	return client, newToken.AccessToken
 }
 
 // AsanaSync either does a full sync or a incremental sync.
 // Taken from googles sample code
 // To better understand whats going on here, you can read https://developers.google.com/calendar/v3/sync
 func (p *Plugin) AsanaSync(userID string) error {
-	client := p.getAsanaClient(userID)
+	client, _ := p.getAsanaClient(userID)
 
 	if client == nil {
 		return errors.New("cant't get asana client")
