@@ -29,12 +29,6 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 		p.connectAsana(w, r)
 	case "/oauth/complete":
 		p.completeAsana(w, r)
-	// case "/delete":
-	// 	p.deleteEvent(w, r)
-	// case "/handleresponse":
-	// 	p.handleEventResponse(w, r)
-	// case "/watch":
-	// 	p.watchCalendar(w, r)
 	default:
 		http.NotFound(w, r)
 	}
@@ -129,24 +123,6 @@ func (p *Plugin) completeAsana(w http.ResponseWriter, r *http.Request) {
 	}
 
 	p.API.KVSet(userId+"asanaWorkspace", []byte(workspaces[0].ID))
-	// TODO:
-
-	// err = p.AsanaSync(userId)
-	// if err != nil {
-	// 	p.API.LogWarn("failed sync fresh calender", "error", err.Error())
-	// 	http.Error(w, "failed sync fresh calender", http.StatusInternalServerError)
-	// 	return
-	// }
-
-	// if err = p.setupCalendarWatch(userId); err != nil {
-	// 	http.Error(w, err.Error(), http.StatusBadRequest)
-	// 	return
-	// }
-
-	// p.startCronJob(autheduserId)
-
-	// // Post intro post
-	// resJson, _ := json.Marshal(workspaces)
 
 	message := "#### Welcome to Asana Plugin!\n" +
 		"You've connected your account to your Asana.\n" +
@@ -162,116 +138,62 @@ func (p *Plugin) completeAsana(w http.ResponseWriter, r *http.Request) {
 		// message += "If you want to change actual workspace, use `/asana workspace %ordinal number%` command` \n"
 	}
 	workspace := workspaces[0]
-	workspace.Projects(client)
+	// workspace.Projects(client)
 
+	// TODO: remove, debug info
 	workspaceJSON, err := json.Marshal(workspace)
 
+	// TODO: remove, debug info
 	message += "\n `" + string(workspaceJSON) + "` \n"
 
 	Projects, _, _ := workspace.Projects(client)
 
 	for _, project := range Projects {
 		eventsResponse, _ := GetEventsResponse(accessToken, project.ID, "")
-		p.API.KVSet(project.ID+"projectSyncToken", []byte(eventsResponse.Sync))
+		p.API.KVSet(userId+":"+project.ID+"projectSyncToken", []byte(eventsResponse.Sync))
 	}
+
+	p.startCronJob(userId)
 
 	p.CreateBotMessage(userId, message)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprint(w, html)
 }
 
-// func (p *Plugin) deleteEvent(w http.ResponseWriter, r *http.Request) {
-// 	html := `
-// 	<!DOCTYPE html>
-// 	<html>
-// 		<head>
-// 			<script>
-// 				window.close();
-// 			</script>
-// 		</head>
-// 	</html>
-// 	`
-// 	userId := r.Header.Get("Mattermost-User-ID")
-// 	eventID := r.URL.Query().Get("evtid")
-// 	calendarID := p.getPrimaryCalendarID(userId)
-// 	srv, err := p.getAsanaClient(userId)
-// 	if err != nil {
-// 		p.CreateBotDMPost(userId, fmt.Sprintf("Unable to delete event. Error: %s", err))
-// 		return
-// 	}
+func (p *Plugin) GetNewEvents(userId string) {
+	client, accessToken := p.getAsanaClient(userId)
 
-// 	eventToBeDeleted, _ := srv.Events.Get(calendarID, eventID).Do()
-// 	err = srv.Events.Delete(calendarID, eventID).Do()
-// 	if err != nil {
-// 		p.CreateBotDMPost(userId, fmt.Sprintf("Unable to delete event. Error: %s", err.Error()))
-// 		return
-// 	}
+	workspaceId, err := p.API.KVGet(userId + "asanaWorkspace")
+	if err != nil {
+		return
+	}
+	workspace := &asana.Workspace{
+		ID: string(workspaceId),
+	}
+	Projects, _, _ := workspace.Projects(client)
 
-// 	p.CreateBotDMPost(userId, fmt.Sprintf("Success! Event _%s_ has been deleted.", eventToBeDeleted.Summary))
-// 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-// 	fmt.Fprint(w, html)
-// }
+	message := ""
+	for _, project := range Projects {
+		syncId, _ := p.API.KVGet(userId + ":" + project.ID + "projectSyncToken")
+		eventsResponse, _ := GetEventsResponse(accessToken, project.ID, string(syncId))
+		p.API.KVSet(userId+":"+project.ID+"projectSyncToken", []byte(eventsResponse.Sync))
 
-func (p *Plugin) handleEventResponse(w http.ResponseWriter, r *http.Request) {
-	html := `
-	<!DOCTYPE html>
-	<html>
-		<head>
-			<script>
-				window.close();
-			</script>
-		</head>
-	</html>
-	`
+		// TODO remove
+		p.CreateBotMessage(userId, userId+":"+project.ID+"projectSyncToken")
 
-	//TODO:
+		if len(eventsResponse.Errors) > 0 {
+			eventsResponse, _ := GetEventsResponse(accessToken, project.ID, eventsResponse.Sync)
+			p.API.KVSet(userId+":"+project.ID+"projectSyncToken", []byte(eventsResponse.Sync))
+		}
+		if len(eventsResponse.Data) > 0 {
+			for index, event := range eventsResponse.Data {
+				eventJSON, _ := json.Marshal(event)
+				message += fmt.Sprintf("### Update %d \n", index+1) +
+					"`" + string(eventJSON) + "`"
+			}
+		}
 
-	// userId := r.Header.Get("Mattermost-User-ID")
-	// response := r.URL.Query().Get("response")
-	// eventID := r.URL.Query().Get("evtid")
-	// calendarID := p.getPrimaryCalendarID(userId)
-	// srv, _ := p.getAsanaClient(userId)
+	}
+	p.CreateBotMessage(userId, message)
 
-	// eventToBeUpdated, err := srv.Events.Get(calendarID, eventID).Do()
-	// if err != nil {
-	// 	p.CreateBotDMPost(userId, fmt.Sprintf("Error! Failed to update the response of _%s_ event.", eventToBeUpdated.Summary))
-	// 	return
-	// }
-
-	// for idx, attendee := range eventToBeUpdated.Attendees {
-	// 	if attendee.Self {
-	// 		eventToBeUpdated.Attendees[idx].ResponseStatus = response
-	// 	}
-	// }
-
-	// event, err := srv.Events.Update(calendarID, eventID, eventToBeUpdated).Do()
-	// if err != nil {
-	// 	p.CreateBotDMPost(userId, fmt.Sprintf("Error! Failed to update the response of _%s_ event.", event.Summary))
-	// } else {
-	// 	p.CreateBotDMPost(userId, fmt.Sprintf("Success! Event _%s_ response has been updated.", event.Summary))
-	// }
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprint(w, html)
 }
-
-// func (p *Plugin) watchCalendar(w http.ResponseWriter, r *http.Request) {
-// 	userId := r.URL.Query().Get("userId")
-// 	channelID := r.Header.Get("X-Goog-Channel-ID")
-// 	resourceID := r.Header.Get("X-Goog-Resource-ID")
-// 	state := r.Header.Get("X-Goog-Resource-State")
-
-// 	watchToken, _ := p.API.KVGet(userId + "watchToken")
-// 	channelByte, _ := p.API.KVGet(userId + "watchChannel")
-// 	var channel calendar.Channel
-// 	json.Unmarshal(channelByte, &channel)
-// 	if string(watchToken) == channelID && state == "exists" {
-// 		p.AsanaSync(userId)
-// 	} else {
-// 		srv, _ := p.getAsanaClient(userId)
-// 		srv.Channels.Stop(&calendar.Channel{
-// 			Id:         channelID,
-// 			ResourceId: resourceID,
-// 		})
-// 	}
-// }

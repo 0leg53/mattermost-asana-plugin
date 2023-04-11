@@ -1,0 +1,66 @@
+{
+  "data": [
+    {
+      "type": "task",
+      "action": "changed",
+      "resource": {
+        "gid": "1204358015581852",
+        "resource_type": "task"
+      },
+      "change": {
+        "field": "name",
+        "action": "changed"
+      }
+    },
+    {
+      "type": "story",
+      "action": "added",
+      "resource": {
+        "gid": "1204357549505732",
+        "resource_type": "story"
+      }
+    },
+    {
+      "type": "story",
+      "action": "added",
+      "resource": {
+        "gid": "1204357549505739",
+        "resource_type": "story"
+      }
+    },
+    {
+      "type": "task",
+      "action": "added",
+      "resource": {
+        "gid": "1204358015581854",
+        "resource_type": "task"
+      }
+    },
+    {
+      "type": "task",
+      "action": "added",
+      "resource": {
+        "gid": "1204358015581854",
+        "resource_type": "task"
+      }
+    },
+    {
+      "type": "task",
+      "action": "added",
+      "resource": {
+        "gid": "1204358015581856",
+        "resource_type": "task"
+      }
+    },
+    {
+      "type": "task",
+      "action": "added",
+      "resource": {
+        "gid": "1204358015581856",
+        "resource_type": "task"
+      }
+    }
+  ],
+  "sync": "b68b561882aa68e26d684f9e7921f548:0",
+  "has_more": false
+}

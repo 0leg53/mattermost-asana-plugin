@@ -149,10 +149,16 @@ Setting the `MM_DEBUG` environment variable will invoke the debug builds. The si
 
 onComplete:
 — собираем все проекты [*]
-— по каждому проекту делаем запросы events и записываем sync-токен как (%projectId%+projectSyncToken : %sync-token%). тут ещё мы получаем 412 и errors.message [*]
-- ставим cron-job (5 минут) на сбор всех проектов и сбор events по каждому с записанным sync-токеном. 
+— по каждому проекту делаем запросы events и записываем sync-токен как (%userID%:%projectId%+projectSyncToken : %sync-token%). тут ещё мы получаем 412 и errors.message [*]
+- ставим cron-job (5 минут) на сбор всех проектов и сбор events по каждому с записанным sync-токеном. (как и когда удалять джобу?)
 
 в джобе:
 - записываем новый sync токен. 
 — для каждого полученного объекта event собираем данные по userId, projectId и т.д. и отправляем сообщение юзеру по (mattermost)userId,
+(каждый запрошенный gid запписываем с данными в store с expired в течение 3 дней)
 — если получаем ошибку "sync старый", сразу переспрашиваем events 
+
+
+— нужна проверка на "этот пользователь уже добавлен" и запрещать `/connect`
+
+— как сохранить запущенные cronjobs или перезаупскать их? на первое время можно просить ввести /asana connect после релиза

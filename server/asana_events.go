@@ -6,7 +6,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"bitbucket.org/mikehouston/asana-go"
@@ -49,7 +48,9 @@ func GetEventsResponse(accessToken string, project string, sync string) (Respons
 		return result, err
 	}
 	defer res.Body.Close()
-	body, _ := ioutil.ReadAll(res.Body)
+	// TODO: go to prod
+	// body, _ := ioutil.ReadAll(res.Body)
+	body := []byte(`{"data": [{ "type": "task", "action": "changed", "resource": {   "gid": "1204358015581852",   "resource_type": "task" }, "change": {   "field": "name",   "action": "changed" }},{ "type": "story", "action": "added", "resource": {   "gid": "1204357549505732",   "resource_type": "story" }},{ "type": "story", "action": "added", "resource": {   "gid": "1204357549505739",   "resource_type": "story" }},{ "type": "task", "action": "added", "resource": {   "gid": "1204358015581854",   "resource_type": "task" }},{ "type": "task", "action": "added", "resource": {   "gid": "1204358015581854",   "resource_type": "task" }},{ "type": "task", "action": "added", "resource": {   "gid": "1204358015581856",   "resource_type": "task" }},{ "type": "task", "action": "added", "resource": {   "gid": "1204358015581856",   "resource_type": "task" }}],"sync": "b68b561882aa68e26d684f9e7921f548:0","has_more": false}`)
 
 	if err := json.Unmarshal(body, &result); err != nil {
 		fmt.Println("Can not unmarshal JSON")
