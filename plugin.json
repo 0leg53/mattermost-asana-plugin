@@ -21,7 +21,7 @@
         "bundle_path": "webapp/dist/main.js"
     },
     "settings_schema": {
-        "header": "Hey! Here is a header text. Want any changes? Text to developer.",
+        "header": "Create app in asana to start using: https://app.asana.com/0/my-apps",
         "settings": [
             {
                 "key": "AsanaClientId",

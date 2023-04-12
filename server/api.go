@@ -138,13 +138,6 @@ func (p *Plugin) completeAsana(w http.ResponseWriter, r *http.Request) {
 		// message += "If you want to change actual workspace, use `/asana workspace %ordinal number%` command` \n"
 	}
 	workspace := workspaces[0]
-	// workspace.Projects(client)
-
-	// TODO: remove, debug info
-	workspaceJSON, err := json.Marshal(workspace)
-
-	// TODO: remove, debug info
-	message += "\n `" + string(workspaceJSON) + "` \n"
 
 	Projects, _, _ := workspace.Projects(client)
 
@@ -172,28 +165,39 @@ func (p *Plugin) GetNewEvents(userId string) {
 	}
 	Projects, _, _ := workspace.Projects(client)
 
-	message := ""
 	for _, project := range Projects {
 		syncId, _ := p.API.KVGet(userId + ":" + project.ID + "projectSyncToken")
 		eventsResponse, _ := GetEventsResponse(accessToken, project.ID, string(syncId))
 		p.API.KVSet(userId+":"+project.ID+"projectSyncToken", []byte(eventsResponse.Sync))
 
-		// TODO remove
-		p.CreateBotMessage(userId, userId+":"+project.ID+"projectSyncToken")
-
 		if len(eventsResponse.Errors) > 0 {
 			eventsResponse, _ := GetEventsResponse(accessToken, project.ID, eventsResponse.Sync)
 			p.API.KVSet(userId+":"+project.ID+"projectSyncToken", []byte(eventsResponse.Sync))
 		}
+
 		if len(eventsResponse.Data) > 0 {
-			for index, event := range eventsResponse.Data {
-				eventJSON, _ := json.Marshal(event)
-				message += fmt.Sprintf("### Update %d \n", index+1) +
-					"`" + string(eventJSON) + "`"
+			for _, event := range eventsResponse.Data {
+				if event.Resource.ResourceType == "task" {
+					task := p.GetTask(event.Resource.Gid, client)
+					message := fmt.Sprintf("###### Task \"%s\" updated \n", task.Name)
+					if event.Change.Action != "" {
+						message += fmt.Sprintf("Field	%s %s", event.Change.Field, event.Change.Action)
+						if event.User.Gid != "" {
+							message += fmt.Sprintf("by %s", event.User.Name)
+						}
+						message += "\n"
+					}
+
+					message += fmt.Sprintf("###### [View task](https://app.asana.com/0/0/%s)\n", event.Resource.Gid)
+					message += "--- \n"
+					p.CreateBotMessage(userId, message)
+				}
+				// eventJSON, _ := json.Marshal(event)
+				// message := fmt.Sprintf("##### Update %d \n", index+1)
+				// message += "`" + string(eventJSON) + "`\n"
 			}
 		}
 
 	}
-	p.CreateBotMessage(userId, message)
 
 }

@@ -13,8 +13,35 @@ import (
 
 var ASANA_URL = "https://app.asana.com/api/1.0/"
 
+type EventResource struct {
+	Gid          string `json:"gid"`
+	ResourceType string `json:"resource_type"`
+	Name         string `json:"name"`
+}
+
+type EventChange struct {
+	Field  string `json:"field"`
+	Action string `json:"action"`
+}
+type EventUser struct {
+	Gid          string `json:"gid"`
+	ResourceType string `json:"resource_type"`
+	Name         string `json:"name"`
+}
+type EventParent struct {
+	Gid          string `json:"gid"`
+	ResourceType string `json:"resource_type"`
+	Name         string `json:"name"`
+}
+
 type Event struct {
-	Type string `json:"type"`
+	Type      string        `json:"type"`
+	Action    string        `json:"action"`
+	Resource  EventResource `json:"resource"`
+	Change    EventChange   `json:"change"`
+	Parent    EventParent   `json:"parent"`
+	User      EventUser     `json:"user"`
+	CreatedAt string        `json:"created_at"`
 }
 
 type Response struct {
@@ -48,9 +75,9 @@ func GetEventsResponse(accessToken string, project string, sync string) (Respons
 		return result, err
 	}
 	defer res.Body.Close()
-	// TODO: go to prod
 	// body, _ := ioutil.ReadAll(res.Body)
-	body := []byte(`{"data": [{ "type": "task", "action": "changed", "resource": {   "gid": "1204358015581852",   "resource_type": "task" }, "change": {   "field": "name",   "action": "changed" }},{ "type": "story", "action": "added", "resource": {   "gid": "1204357549505732",   "resource_type": "story" }},{ "type": "story", "action": "added", "resource": {   "gid": "1204357549505739",   "resource_type": "story" }},{ "type": "task", "action": "added", "resource": {   "gid": "1204358015581854",   "resource_type": "task" }},{ "type": "task", "action": "added", "resource": {   "gid": "1204358015581854",   "resource_type": "task" }},{ "type": "task", "action": "added", "resource": {   "gid": "1204358015581856",   "resource_type": "task" }},{ "type": "task", "action": "added", "resource": {   "gid": "1204358015581856",   "resource_type": "task" }}],"sync": "b68b561882aa68e26d684f9e7921f548:0","has_more": false}`)
+
+	body := []byte(`{ "data": [{ "type": "task", "action": "changed", "resource": {"gid": "1204358015581852","resource_type": "task" }, "change": {"field": "name","action": "changed" }},{ "type": "story", "action": "added", "resource": {"gid": "1204357549505732","resource_type": "story" }},{ "type": "story", "action": "added", "resource": {"gid": "1204357549505739","resource_type": "story" }},{ "type": "task", "action": "added", "resource": {"gid": "1204358015581854","resource_type": "task" }},{ "type": "task", "action": "added", "resource": {"gid": "1204358015581854","resource_type": "task" }},{ "type": "task", "action": "added", "resource": {"gid": "1204358015581856","resource_type": "task" }},{ "type": "task", "action": "added", "resource": {"gid": "1204358015581856","resource_type": "task" }} ], "sync": "b68b561882aa68e26d684f9e7921f548:0", "has_more": false}`)
 
 	if err := json.Unmarshal(body, &result); err != nil {
 		fmt.Println("Can not unmarshal JSON")
